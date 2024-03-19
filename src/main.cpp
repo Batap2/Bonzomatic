@@ -20,6 +20,10 @@
 #include "Capture.h"
 #include "SetupDialog.h"
 
+float fpsBuffer[10] = {0,0,0,0,0,0,0,0,0,0};
+bool countFPS = false;
+int fpsBufferCurrentIndex = 0;
+
 unsigned int ParseColor( const std::string & color )
 {
   if ( color.size() < 6 || color.size() > 8 ) return 0xFFFFFFFF;
@@ -445,7 +449,7 @@ int main( int argc, const char * argv[] )
     for ( int i = 0; i < Renderer::keyEventBufferCount; i++ )
     {
 #define FKEY(x) ((x)+281)
-      if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 2 ) ) // F2
+      if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 3 ) ) // F2
       {
         if ( bTexPreviewVisible )
         {
@@ -460,7 +464,7 @@ int main( int argc, const char * argv[] )
           bTexPreviewVisible = true;
         }
       }
-      else if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 5 ) || ( Renderer::keyEventBuffer[ i ].ctrl && Renderer::keyEventBuffer[ i ].scanCode == 'r' ) ) // F5
+      else if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 1 ) || ( Renderer::keyEventBuffer[ i ].ctrl && Renderer::keyEventBuffer[ i ].scanCode == 'r' ) ) // F5
       {
         mShaderEditor.GetText( szShader, 65535 );
         if ( Renderer::ReloadShader( szShader, (int) strlen( szShader ), szError, 4096 ) )
@@ -474,6 +478,11 @@ int main( int argc, const char * argv[] )
           mDebugOutput.SetText( szError );
         }
       }
+      else if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 4 ))
+      {
+          // -------- count FPS ----------
+          countFPS = !countFPS;
+      }
       else if ( Renderer::keyEventBuffer[ i ].ctrl && Renderer::keyEventBuffer[ i ].scanCode == '[' ) // ctrl-[
       {
         mShaderEditor.SetOpacity( mShaderEditor.GetOpacity() - 10 );
@@ -484,7 +493,7 @@ int main( int argc, const char * argv[] )
         mShaderEditor.SetOpacity( mShaderEditor.GetOpacity() + 10 );
         mDebugOutput.SetOpacity( mDebugOutput.GetOpacity() + 10 );
       }
-      else if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 11 ) || ( Renderer::keyEventBuffer[ i ].ctrl && Renderer::keyEventBuffer[ i ].scanCode == 'f' ) ) // F11 or Ctrl/Cmd-f  
+      else if ( Renderer::keyEventBuffer[ i ].scanCode == FKEY( 2 ) || ( Renderer::keyEventBuffer[ i ].ctrl && Renderer::keyEventBuffer[ i ].scanCode == 'f' ) ) // F11 or Ctrl/Cmd-f
       {
         bShowGui = !bShowGui;
       }
@@ -510,9 +519,29 @@ int main( int argc, const char * argv[] )
 
       }
     }
+
+    // -------- FPS COUNT -----------
+    if(countFPS){
+        float t = Timer::GetTime() - fLastTimeMS;
+
+        fpsBuffer[fpsBufferCurrentIndex] = t;
+        fpsBufferCurrentIndex = (++fpsBufferCurrentIndex)%10;
+
+        float avgFps = 0;
+        for(auto &fps : fpsBuffer){
+            avgFps += fps;
+        }
+        avgFps /= 10;
+
+        char buff[2000];
+        std::sprintf(buff, "frame : %f \nfps : %f", t, 1000/t);
+        mDebugOutput.SetText( buff );
+    }
+    // -------- FPS COUNT -----------
+
     Renderer::keyEventBufferCount = 0;
 
-    Renderer::SetShaderConstant( "fGlobalTime", time );
+    Renderer::SetShaderConstant( "t", time );
     Renderer::SetShaderConstant( "v2Resolution", settings.sRenderer.nWidth, settings.sRenderer.nHeight );
 
     float fTime = Timer::GetTime();

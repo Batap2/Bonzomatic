@@ -6,3 +6,4 @@ build
 build.*
 .vs
 .DS_Store
+cmake-build-debug-mingw

@@ -61,7 +61,8 @@ void GetKeymapName( char * sz )
 bool ExecuteCommand( const char * cmd, const char * param )
 {
   HINSTANCE hI = ShellExecute( NULL, NULL, cmd, param, NULL, SW_SHOW );
-  return (int) hI >= 32;
+  int hii = static_cast<int>(reinterpret_cast<uintptr_t>(hI));
+  return hii >= 32;
 }
 
 bool FileExists( const char * path )

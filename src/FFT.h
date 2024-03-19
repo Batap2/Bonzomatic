@@ -1,4 +1,4 @@
-#define FFT_SIZE 1024
+#define FFT_SIZE 2048
 
 namespace FFT
 {

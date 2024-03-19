@@ -56,7 +56,7 @@ const char * Platform::DefaultFont()
 
 int Platform::DefaultFontSize()
 {
-  return 10;
+  return 16;
 }
 
 unsigned int Platform::DoubleClickTime()
@@ -148,7 +148,7 @@ void Font::Create( const FontParameters & fp )
 
   stbtt_InitFont( &newFont->fontinfo, buf, 0 );
 
-  newFont->scale = stbtt_ScaleForPixelHeight( &newFont->fontinfo, fp.size );
+  newFont->scale = stbtt_ScaleForPixelHeight( &newFont->fontinfo, fp.size);
 
   delete[] bmp;
 

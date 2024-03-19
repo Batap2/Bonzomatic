@@ -1,0 +1,166 @@
+#version 410 core
+
+uniform float t; // in seconds
+uniform vec2 v2Resolution; // viewport resolution (in pixels)
+uniform float fFrameTime; // duration of the last frame, in seconds
+
+uniform sampler1D texFFT; // towards 0.0 is bass / lower freq, towards 1.0 is higher / treble freq
+uniform sampler1D texFFTSmoothed; // this one has longer falloff and less harsh transients
+uniform sampler1D texFFTIntegrated; // this is continually increasing
+uniform sampler2D texPreviousFrame; // screenshot of the previous frame
+uniform sampler2D texChecker;
+uniform sampler2D texNoise;
+uniform sampler2D texTex1;
+uniform sampler2D texTex2;
+uniform sampler2D texTex3;
+uniform sampler2D texTex4;
+
+in vec2 out_texcoord;
+vec2 uv;
+layout(location = 0) out vec4 out_color; // out_color must be written in order to see anything
+
+const int MAX_MARCHING_STEPS = 255;
+const float MIN_DIST = 0.0;
+const float MAX_DIST = 100.0;
+const float EPSILON = 0.0001;
+const float PI = 3.141592;
+
+// ------------- Math -----------------
+
+float rand() {
+  return fract(sin(dot(out_texcoord.xy,vec2(12.9898*t,78.233)))*20000);
+}
+
+float rand(float _min, float _max) {
+  return fract(sin(dot(out_texcoord.xy,vec2(12.9898*t,78.233)))*20000)*_max + _min;
+}
+// --------------------------------------
+
+// ------------- FFT Utils --------------
+
+float getBassPeak()
+{
+  float bassFreq = 0.0025;
+  
+  
+  /*float bassPeak = 0;
+  int nSample = 0;
+  for(float a = min_; a < max_; a += 0.0001)
+  {
+    bassPeak += texture(texFFT, a).r;
+    nSample++;
+  }  
+  bassPeak /= nSample;*/
+  
+  float bassPeak = texture(texFFT, bassFreq).r;
+  
+  bassPeak = smoothstep(0.01f,0.25f,bassPeak);
+
+  return bassPeak;
+}
+// --------------------------------------
+
+// ------------- SDF --------------------
+
+// ------------- 2D
+
+float circle(in vec2 _st, in float _radius){
+  return 1.-smoothstep(_radius-(_radius*0.01),_radius+(_radius*0.01),dot(uv-_st,uv-_st)*4.0);
+}
+
+float sdCircle(in vec2 _st, in float _radius){
+	return distance(uv-_st, _st)-_radius;
+}
+
+float sdArc( in vec2 p, in vec2 sc, in float ra, float rb )
+{
+    // sc is the sin/cos of the arc's aperture
+    p.x = abs(p.x);
+    return ((sc.y*p.x>sc.x*p.y) ? length(p-sc*ra) : 
+                                  abs(length(p)-ra)) - rb;
+}
+
+float sdEquilateralTriangle(  in vec2 p, in float r )
+{
+    const float k = sqrt(3.0);
+    p.x = abs(p.x) - r;
+    p.y = p.y + r/k;
+    if( p.x+k*p.y>0.0 ) p=vec2(p.x-k*p.y,-k*p.x-p.y)/2.0;
+    p.x -= clamp( p.x, -2.0*r, 0.0 );
+    return -length(p)*sign(p.y);
+}
+
+float neonCosLine(float function, float mult, float glow)
+  {
+    float delta = 1/(abs(uv.x - function));
+    delta *= mult;
+    delta = pow(delta, glow);
+    return delta;
+  }
+
+// ----------------
+
+float sdSphere( vec3 p, float s )
+{
+  return length(p)-s;
+}
+
+
+// --------------------------------------
+float sceneSDF(vec3 samplePoint) {
+    return sdSphere(samplePoint, 1.0f);
+}
+
+float shortestDistanceToSurface(vec3 eye, vec3 marchingDirection, float start, float end) {
+    float depth = start;
+    for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+        float dist = sceneSDF(eye + depth * marchingDirection);
+        if (dist < EPSILON) {
+			return depth;
+        }
+        depth += dist;
+        if (depth >= end) {
+            return end;
+        }
+    }
+    return end;
+}
+
+vec3 rayDirection(float fieldOfView, vec2 size, vec2 fragCoord) {
+    vec2 xy = fragCoord - size / 2.0;
+    float z = size.y / tan(radians(fieldOfView) / 2.0);
+    return normalize(vec3(xy, -z));
+}
+
+void main(void)
+{
+	uv = vec2(gl_FragCoord.x / v2Resolution.x, gl_FragCoord.y / v2Resolution.y);
+  uv -= 0.5;
+  //uv = fract(uv*10)-0.5;
+  uv /= vec2(v2Resolution.y / v2Resolution.x, 1);
+  
+
+  //mat2 uvRot = mat2(cos(t), -sin(t), sin(t), cos(t));
+  //uv = uv*uvRot;
+  
+
+  
+  
+  float bassP = getBassPeak();
+
+  float bcos1 = (cos( ( log((uv.y/2+1.75)/2)*3 + t/4) * 2) + cos( 3*( log((uv.y/2+1.75)/2)*3 + t/4) * 2)) *0.4;
+  float bcos2 = (cos( ( log((uv.y/2+1.75)/2)*2.5 + t/4) * 2) + cos( 3*( log((uv.y/2+1.75)/2)*2.5 + t/4) * 2)) *0.4;
+  float bcos3 = (cos( ( log((uv.y/2+1.75)/2)*2 + t/4) * 2) + cos( 3*( log((uv.y/2+1.75)/2)*2 + t/4) * 2)) *0.4;
+    
+  
+  vec3 c_bcos1 = vec3(0.031, 0.85, 0.839) * neonCosLine(bcos1, 0.005, 0.8);
+  vec3 c_bcos2 = vec3(1, 0.18, 0.388) * neonCosLine(bcos2, 0.01, 0.8);
+  vec3 c_bcos3 = vec3(1, 1, 1) * neonCosLine(bcos3, 0.004, 0.8);
+  
+  vec3 c_bcos = c_bcos1 + c_bcos2 + c_bcos3;
+  
+  out_color = vec4(c_bcos, 1);
+  //out_color = vec4(a+b+c);
+  //out_color += bassBackground/2;
+  
+}

@@ -1,5 +1,5 @@
 {
-  "skipSetupDialog": true, // If true, setup dialog will be suppressed - all values you provide below will be used without validation (at your own risk!)
+  "skipSetupDialog": false, // If true, setup dialog will be suppressed - all values you provide below will be used without validation (at your own risk!)
   "window":{ // default window size / state; if there's a setup dialog, it will override it
     "width":1920,
     "height":1080,
@@ -10,7 +10,7 @@
   },
   "font":{
     "file":"ProFontWindows.ttf",
-    "size":10,
+    "size":16,
   },
   "rendering":{
     "fftSmoothFactor": 0.9,
@@ -27,5 +27,10 @@
     "outputHeight": 100,
     "opacity": 192,
     "texturePreviewWidth": 100,
+    "spacesForTabs": false,
+    "tabSize": 4,
+    "autoIndent": "smart",
+    "scrollXFactor": 1.0, // if horizontal scrolling is too slow you can speed it up here (or change direction)
+    "scrollYFactor": 5.0,
   }
 }

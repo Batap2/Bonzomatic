@@ -131,7 +131,7 @@ const KeyToCommand KeyMap::MapDefault[] = {
     {SCK_BACK,		SCI_CTRL, 	SCI_DELWORDLEFT},
     {SCK_BACK, 		SCI_ALT,	SCI_UNDO},
     {SCK_BACK,		SCI_CSHIFT,	SCI_DELLINELEFT},
-    {'Z', 			SCI_CTRL,	SCI_UNDO},
+    {'W', 			SCI_CTRL,	SCI_UNDO},
 #if OS_X_KEYS
     {'Z', 			SCI_CSHIFT,	SCI_REDO},
 #else
